@@ -2,6 +2,7 @@ package com.codigo.retrofit.service.impl;
 
 
 import com.codigo.retrofit.aggregates.response.ReniecResponse;
+import com.codigo.retrofit.exception.ConsultaReniecException;
 import com.codigo.retrofit.retrofit.ClientReniecService;
 import com.codigo.retrofit.retrofit.ClientRetrofit;
 import com.codigo.retrofit.service.PersonService;
@@ -30,13 +31,14 @@ public class PersonServiceImpl implements PersonService {
     @Override
     public ReniecResponse findByDni(String dni) throws IOException {
         if (token == null || token.isBlank()) {
-            throw new IllegalStateException("Configura la variable de entorno DECOLECTA_TOKEN");
+            throw new ConsultaReniecException("Configura la variable de entorno DECOLECTA_TOKEN");
         }
         Response<ReniecResponse>  executeReniec = preparedClient(dni).execute();
         if(executeReniec.isSuccessful() && Objects.nonNull(executeReniec.body())){
             return executeReniec.body();
         }
-        return new ReniecResponse();
+        throw new ConsultaReniecException("No se pudo consultar Decolecta RENIEC. Codigo: "
+                + executeReniec.code());
     }
 
     private Call<ReniecResponse> preparedClient(String dni){
