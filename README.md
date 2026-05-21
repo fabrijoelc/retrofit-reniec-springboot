@@ -1,8 +1,8 @@
 # Retrofit RENIEC Spring Boot
 
-Proyecto de ejemplo en Spring Boot para consumir una API externa de RENIEC usando Retrofit.
+Proyecto de ejemplo en Spring Boot para consumir una API externa de RENIEC usando Retrofit y guardar personas en PostgreSQL con JPA.
 
-Este proyecto no usa base de datos, JPA, Hibernate ni repositorios. Su objetivo es recibir un DNI desde un endpoint propio, consultar la API externa de Decolecta y devolver la informacion encontrada.
+El proyecto recibe un DNI, consulta la API externa de Decolecta, transforma la respuesta a una entidad y permite guardar, listar, buscar, actualizar estado y eliminar de forma logica una persona.
 
 ## Tecnologias usadas
 
@@ -10,19 +10,28 @@ Este proyecto no usa base de datos, JPA, Hibernate ni repositorios. Su objetivo 
 - Spring Boot 3.3.5
 - Retrofit 2.9.0
 - Gson Converter
+- Spring Data JPA
+- PostgreSQL
 - Lombok
 - Maven
 
 ## Flujo del proyecto
 
 ```text
-Cliente -> Controller -> Service -> Retrofit -> API Decolecta RENIEC -> Respuesta JSON
+Cliente -> Controller -> Service -> Retrofit -> API Decolecta RENIEC
+                              -> Mapper -> Repository -> PostgreSQL
 ```
 
-El endpoint principal del proyecto es:
+## Endpoints principales
 
 ```http
 GET /api/person/find/{dni}
+POST /api/person/save/{dni}
+GET /api/person/
+GET /api/person/{id}
+PUT /api/person/{id}
+PUT /api/person/{id}/status/{status}
+DELETE /api/person/{id}
 ```
 
 Ejemplo:
@@ -35,6 +44,23 @@ Internamente, Retrofit consulta:
 
 ```text
 https://api.decolecta.com/v1/reniec/dni?numero=12345678
+```
+
+## Base de datos
+
+El proyecto usa PostgreSQL. La configuracion actual espera una base de datos local:
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/retrofit_db
+spring.datasource.username=postgres
+spring.datasource.password=cero
+spring.jpa.hibernate.ddl-auto=update
+```
+
+Antes de ejecutar el proyecto, crea la base de datos:
+
+```sql
+CREATE DATABASE retrofit_db;
 ```
 
 ## Configuracion del token
@@ -64,17 +90,7 @@ Luego puedes ejecutar el proyecto:
 - Singleton: se usa en `ClientRetrofit` para reutilizar una sola instancia de Retrofit.
 - Service Layer: `PersonService` y `PersonServiceImpl` separan la logica del controller.
 - DTO: `ReniecResponse` representa la respuesta de la API externa.
+- Repository: `PersonRepository` encapsula el acceso a base de datos.
+- Mapper: `PersonMapper` convierte `ReniecResponse` a `PersonEntity`.
 - Client/Adapter: `ClientReniecService` adapta una llamada Java a una peticion HTTP externa.
 - Dependency Injection: Spring inyecta el servicio dentro del controller.
-
-## Diferencia con un proyecto con JPA
-
-Este proyecto solo consume una API externa y devuelve la respuesta. Por eso no necesita:
-
-- `spring-boot-starter-data-jpa`
-- `@Entity`
-- `JpaRepository`
-- configuracion `spring.datasource`
-- tablas en base de datos
-
-Si se quisiera guardar historial de consultas o registrar personas, ahi si tendria sentido agregar JPA, una base de datos y repositorios.
